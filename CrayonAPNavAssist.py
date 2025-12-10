@@ -1,4 +1,6 @@
 """
+Example input:
+
 "0:Crayon"
 [1,200,100]
 [4,500,0]
@@ -27,9 +29,6 @@ TARGET_REGEX = re.compile(r"\[\s*([+-]?\d+)\s*,\s*([+-]?\d+(?:\.\d+)?)\s*,\s*([+
 # === Math helpers ===
 def compute_yaw_to_target(px, pz, tx, tz):
     return math.degrees(math.atan2(px - tx, tz - pz))
-
-def compute_distance(px, pz, tx, tz):
-    return math.sqrt((tx - px) ** 2 + (tz - pz) ** 2)
 
 def normalize_angle_delta(angle):
     # normalize to (-180, 180) because minecraft...
@@ -336,7 +335,6 @@ class TargetViewerWindow(ctk.CTkToplevel):
 
         t = self.targets[self.index]
         self.id_label.configure(text=f"{t.get('id', '-')}")
-        self.target_label.configure(text=f"{t.get('x', '-')}, {t.get('z', '-')}")
 
         # Try to compute values if parent has F3+C loaded
         player = self.parent.get_player_state()
@@ -346,7 +344,7 @@ class TargetViewerWindow(ctk.CTkToplevel):
             self.req_yaw_label.configure(text="—")
             self.turn_label.configure(text="—")
         else:
-            # TODO NETHER LOGIC
+            dim = player["dim"]
             px = player["px"]
             pz = player["pz"]
             yaw = player["yaw"]
@@ -354,13 +352,20 @@ class TargetViewerWindow(ctk.CTkToplevel):
             tx = t["x"]
             tz = t["z"]
 
-            needed_yaw = compute_yaw_to_target(px, pz, tx, tz)
-            dist = compute_distance(px, pz, tx, tz)
+            if ("nether" in dim):
+                tx = tx/8
+                tz = tz/8
+
+            needed_yaw = compute_yaw_to_target(px, pz, tx, tz)            
             yaw_change = normalize_angle_delta(needed_yaw - yaw)
 
-            # GO TO FLOOR
-            # DO DISTANCE FOR INDIVIDUAL AXIS?
-            self.dist_label.configure(text=f"{dist:.1f} Blocks")
+            distance_x = px - tx
+            distance_z = pz - tz
+
+            # Set Labels
+            self.target_label.configure(text=f"{tx:.0f}, {tz:.0f}")
+
+            self.dist_label.configure(text=f"{distance_x:.0f}, {distance_z:.0f}")
             self.req_yaw_label.configure(text=f"{needed_yaw:.1f}°")
             self.turn_label.configure(text=f"{yaw_change:+.1f}°")
 
