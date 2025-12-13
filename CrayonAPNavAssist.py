@@ -39,6 +39,22 @@ def normalize_angle_delta(angle):
         a += 360
     return a
 
+def value_to_color(value, green_range, red_range):
+    value = abs(value)
+
+    if value <= green_range:
+        return "#00ff00"
+    if value >= red_range:
+        return "#ff0000"
+
+    # normalise
+    t = (value - green_range) / (red_range - green_range)
+
+    # green to red gradient
+    r = int(255 * t)
+    g = int(255 * (1 - t))
+    return f"#{r:02x}{g:02x}00"
+
 
 
 class CrayonAPNavAssist(ctk.CTk):
@@ -216,32 +232,38 @@ class TargetViewerWindow(ctk.CTkToplevel):
         # Main info card
         card = ctk.CTkFrame(self)
         card.grid(row=0, column=0, padx=10, pady=10, sticky="nesw")
+
+        # text_width = ctk.CTkFont(family="Arial", size=14).measure("+180.0°")  # text width in pixels
         card.grid_columnconfigure(1, weight=1)
+        card.grid_columnconfigure(2, weight=1)
 
         # ID row
         self.id_label = ctk.CTkLabel(card, text="-", font=("Arial", 20))
-        self.id_label.grid(row=0, column=0, columnspan=2, sticky="ew", padx=8, pady=6)
+        self.id_label.grid(row=0, column=0, columnspan=3, sticky="ew", padx=8, pady=6)
 
         # target coords
-        ctk.CTkLabel(card, text="Target:", font=("Arial", 14)).grid(row=1, column=0, sticky="e", padx=8, pady=6)
-        self.target_label = ctk.CTkLabel(card, text="-", font=("Arial", 20))
-        self.target_label.grid(row=1, column=1, sticky="w", padx=8, pady=6)
-
+        ctk.CTkLabel(card, text="Target (X, Z):", font=("Arial", 14)).grid(row=1, column=0, sticky="e", padx=8, pady=6)
+        self.target_x_label = ctk.CTkLabel(card, width=100, text="-", font=("Arial", 20))
+        self.target_x_label.grid(row=1, column=1, sticky="we", padx=0, pady=6)
+        self.target_z_label = ctk.CTkLabel(card, width=100, text="-", font=("Arial", 20))
+        self.target_z_label.grid(row=1, column=2, sticky="we", padx=0, pady=6)
 
         # distance
-        ctk.CTkLabel(card, text="Distance:", font=("Arial", 14)).grid(row=2, column=0, sticky="e", padx=8, pady=6)
-        self.dist_label = ctk.CTkLabel(card, text="-", font=("Arial", 20))
-        self.dist_label.grid(row=2, column=1, sticky="w", padx=8, pady=6)
+        ctk.CTkLabel(card, text="Distance (X, Z):", font=("Arial", 14)).grid(row=2, column=0, sticky="e", padx=8, pady=6)
+        self.distance_x_label = ctk.CTkLabel(card, width=100, text="-", font=("Arial", 20))
+        self.distance_x_label.grid(row=2, column=1, sticky="we", padx=0, pady=6)
+        self.distance_z_label = ctk.CTkLabel(card, width=100, text="-", font=("Arial", 20))
+        self.distance_z_label.grid(row=2, column=2, sticky="we", padx=0, pady=6)
 
         # required angle
         ctk.CTkLabel(card, text="Required Angle:", font=("Arial", 14)).grid(row=3, column=0, sticky="e", padx=8, pady=6)
         self.required_angle_label = ctk.CTkLabel(card, text="-", font=("Arial", 20))
-        self.required_angle_label.grid(row=3, column=1, sticky="w", padx=8, pady=6)
+        self.required_angle_label.grid(row=3, column=1, columnspan=2, sticky="we", padx=0, pady=6)
 
         # turn amount
         ctk.CTkLabel(card, text="Turn Amount:", font=("Arial", 14)).grid(row=4, column=0, sticky="e", padx=8, pady=6)
         self.angle_change_label = ctk.CTkLabel(card, text="-", font=("Arial", 20))
-        self.angle_change_label.grid(row=4, column=1, sticky="w", padx=8, pady=6)
+        self.angle_change_label.grid(row=4, column=1, columnspan=2, sticky="we", padx=0, pady=6)
 
         # Next and Previous Stronghold buttons
         nav = ctk.CTkFrame(self)
@@ -303,25 +325,46 @@ class TargetViewerWindow(ctk.CTkToplevel):
             self.prev_btn.configure(state="normal" if self.target_index > 0 else "disabled")
             self.next_btn.configure(state="normal" if self.target_index < len(self.targets) - 1 else "disabled")
 
+        #======================================================
+        # Target Handling
+        #======================================================
         # If targets do not just reset everything
         if not self.targets or self.target_index < 0:
-            self.id_label.configure(text="-")
-            self.target_label.configure(text="-")
-            self.dist_label.configure(text="—")
+            self.id_label.configure(text="—")
+
+            self.target_x_label.configure(text="—")
+            self.target_z_label.configure(text="—")
+
+            self.distance_x_label.configure(text="—")
+            self.distance_z_label.configure(text="—")
+
             self.required_angle_label.configure(text="—")
             self.angle_change_label.configure(text="—")
             return
         
-        # if player info does not exist, leave it all blank
-        if self.parent.player_x is None or self.parent.player_z is None or self.parent.player_yaw is None or self.parent.player_dimension is None:
-            self.dist_label.configure(text="—")
-            self.required_angle_label.configure(text="—")
-            self.angle_change_label.configure(text="—")
-            return
-        
+        # Target variables
         target_id = self.targets[self.target_index][0]
         target_x = self.targets[self.target_index][1]
         target_z = self.targets[self.target_index][2]
+
+        # Set Labels for non reliant F3+C variables 
+        self.id_label.configure(text=f"{target_id}")
+        self.target_x_label.configure(text=f"{int(target_x)}")
+        self.target_z_label.configure(text=f"{int(target_z)}")
+
+        #======================================================
+        # F3+C Variables Handling
+        #======================================================
+
+        # if player info does not exist, leave it all blank
+        if self.parent.player_x is None or self.parent.player_z is None or self.parent.player_yaw is None or self.parent.player_dimension is None:
+            self.distance_x_label.configure(text="—")
+            self.distance_z_label.configure(text="—")
+
+            self.required_angle_label.configure(text="—")
+            self.angle_change_label.configure(text="—")
+            return
+        
 
         player_x = self.parent.player_x
         player_z = self.parent.player_z
@@ -332,19 +375,24 @@ class TargetViewerWindow(ctk.CTkToplevel):
             target_x = target_x/8
             target_z = target_z/8
 
-        required_angle = compute_yaw_to_target(player_x, player_z, target_x, target_z)            
+        required_angle = compute_yaw_to_target(player_x, player_z, target_x, target_z)    
+
         angle_change = normalize_angle_delta(required_angle - player_yaw)
+        angle_color = value_to_color(abs(angle_change), 5, 180)
 
-        distance_x = player_x - target_x
-        distance_z = player_z - target_z
+        distance_x = int(player_x - target_x)
+        distance_z = int(player_z - target_z)
 
-        # Set Labels
-        self.id_label.configure(text=f"{target_id}")
-        self.target_label.configure(text=f"{target_x:.0f}, {target_z:.0f}")
+        distance_x_color = value_to_color(distance_x, 5, 100)
+        distance_z_color = value_to_color(distance_z, 5, 100)
 
-        self.dist_label.configure(text=f"{distance_x:.0f}, {distance_z:.0f}")
+        self.distance_x_label.configure(text=f"{distance_x}", text_color=distance_x_color)
+        self.distance_z_label.configure(text=f"{distance_z}", text_color=distance_z_color)
+        
         self.required_angle_label.configure(text=f"{required_angle:.1f}°")
-        self.angle_change_label.configure(text=f"{angle_change:+.1f}°")
+
+
+        self.angle_change_label.configure(text=f"{angle_change:+.1f}°", text_color=angle_color)
 
 
 
