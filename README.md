@@ -18,5 +18,5 @@ python -m pip install pyinstaller
 
 ### Build with PowerShell:
 `
-python -m PyInstaller --onefile --windowed --name CrayonNavAssist_v0_1 CrayonNavAssist.py
+python -m PyInstaller --onefile --windowed --name CrayonAPNavAssist_v0_3 .\CrayonAPNavAssist.py
 `
