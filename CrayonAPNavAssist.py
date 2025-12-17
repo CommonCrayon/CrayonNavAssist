@@ -61,7 +61,7 @@ class CrayonAPNavAssist(ctk.CTk):
     def __init__(self):
         super().__init__()
         self.title("CrayonAPNavAssist")
-        self.geometry("340x460")
+        self.geometry("340x520")
         self.grid_columnconfigure(0, weight=1)
 
         # Player / F3+C state
@@ -77,12 +77,19 @@ class CrayonAPNavAssist(ctk.CTk):
 
         self.viewer_window = None
 
+        # Player Binds
+        self.prev_item_bind = None
+        self.next_item_bind = None
+
         ctk.CTkLabel(self, text="All Portals Navigator", font=("Arial", 24)).grid(row=0, column=0, padx=10, pady=(10, 5), sticky="nesw")
         ctk.CTkLabel(self, text="Paste list below:", font=("Arial", 18)).grid(row=1, column=0, padx=10, pady=(10, 2), sticky="w")
 
         # Textbox for list
         self.list_text = ctk.CTkTextbox(self, font=("Arial", 18))
         self.list_text.grid(row=2, column=0, padx=10, pady=10, sticky="nsew")
+
+        # Add temp blind coordinates on start up
+        self.list_text.insert("1.0", "[1, 2048, 0]\n[2, 5120, 0]\n[3, 8192, 0]\n[4, 11264, 0]\n[5, 14336, 0]\n[6, 17408, 0]\n[7, 20480, 0]\n[8, 23552, 0]")
 
         # Button frame
         launch_frame = ctk.CTkFrame(self)
@@ -99,6 +106,21 @@ class CrayonAPNavAssist(ctk.CTk):
         ctk.CTkLabel(status_frame, text="F3+C Status:").grid(row=0, column=0, padx=5, pady=5, sticky="w")
         self.f3c_status = ctk.CTkLabel(status_frame, text="Not loaded", text_color="red")
         self.f3c_status.grid(row=0, column=1, padx=6, pady=8, sticky="w")
+
+        # Rebind Frame
+        rebind_frame = ctk.CTkFrame(self)
+        rebind_frame.grid(row=5, column=0, padx=10, pady=(0, 10), sticky="ew")
+        rebind_frame.grid_columnconfigure(1, weight=1)
+
+        ctk.CTkLabel(rebind_frame, text="Rebind Controls:", font=("Arial", 16)).grid(row=0, column=0, columnspan=2, padx=10, pady=(10, 5), sticky="nesw")
+
+        ctk.CTkLabel(rebind_frame, text="Prev Item:").grid(row=1, column=0, padx=5, pady=5, sticky="e")
+        self.prev_button_bind = ctk.CTkButton(rebind_frame, text=f"{self.prev_item_bind}", font=("Arial", 14), command=self.bind_prev_item_key)
+        self.prev_button_bind.grid(row=1, column=1, sticky="nesw", padx=10, pady=4)
+
+        ctk.CTkLabel(rebind_frame, text="Next Item:").grid(row=2, column=0, padx=5, pady=5, sticky="e")
+        self.next_button_bind = ctk.CTkButton(rebind_frame, text=f"{self.next_item_bind}", font=("Arial", 14), command=self.bind_next_item_key)
+        self.next_button_bind.grid(row=2, column=1, sticky="nesw", padx=10, pady=4)
 
         # Start clipboard updates for F3+C
         self._last_clip = ""
@@ -154,13 +176,17 @@ class CrayonAPNavAssist(ctk.CTk):
                 return
 
         if self.viewer_window is None or not self.viewer_window.winfo_exists():
-            self.viewer_window = TargetViewerWindow(self, self.targets, header=self.header_name)
+            self.viewer_window = TargetViewerWindow(self, self.targets, header=self.header_name, prev_item_bind=self.prev_item_bind, next_item_bind=self.next_item_bind)
             # center the viewer over this window
             self.viewer_window.update_idletasks()
             x = self.winfo_rootx() + 30
             y = self.winfo_rooty() + 30
             self.viewer_window.geometry(f"+{x}+{y}")
         else:
+            # Set binds, in case new ones
+            self.viewer_window.prev_item_bind = self.prev_item_bind
+            self.viewer_window.next_item_bind = self.next_item_bind
+
             # bring to front
             self.viewer_window.lift()
             self.viewer_window.focus_force()
@@ -212,15 +238,52 @@ class CrayonAPNavAssist(ctk.CTk):
         if self.viewer_window is not None and self.viewer_window.winfo_exists():
             self.viewer_window.refresh()
 
+    #==========================================================================================================================
+    # Key binding
+    #==========================================================================================================================
+    def bind_prev_item_key(self):
+        self.prev_button_bind.configure(text="Press a key...")
+        self.bind_all("<Key>", self.bind_prev_listening_for_key)
+
+    def bind_prev_listening_for_key(self, event):
+        key = event.keysym
+
+        # Remove listener immediately
+        self.unbind_all("<Key>")
+
+        # Set and display new bind
+        self.prev_item_bind = key
+        self.prev_button_bind.configure(text=f"{key}")
+
+
+    def bind_next_item_key(self):
+        self.next_button_bind.configure(text="Press a key...")
+        self.bind_all("<Key>", self.bind_next_listening_for_key)
+
+    def bind_next_listening_for_key(self, event):
+        key = event.keysym
+
+        # Remove listener immediately
+        self.unbind_all("<Key>")
+
+        # Set and display new bind
+        self.next_item_bind = key
+        self.next_button_bind.configure(text=f"{key}")
+        
 
 
 class TargetViewerWindow(ctk.CTkToplevel):
-    def __init__(self, parent: CrayonAPNavAssist, targets=None, header=None):
+    def __init__(self, parent: CrayonAPNavAssist, targets=None, header=None, prev_item_bind=None, next_item_bind=None):
         super().__init__(parent)
         self.parent = parent
 
+        # Binds to go to next stronghold and previous stronghold
+        self.prev_item_bind = prev_item_bind
+        self.next_item_bind = next_item_bind
+
         self.title("CrayonNavAssist")
         self.attributes("-topmost", True)
+
 
 
         self.targets = targets
@@ -278,6 +341,10 @@ class TargetViewerWindow(ctk.CTkToplevel):
 
         self.next_btn = ctk.CTkButton(nav, text="Next ▶", command=self.next_item, width=120)
         self.next_btn.grid(row=0, column=2, padx=6, pady=8, sticky="e")
+
+        # Bind next stronghold and prev stronghold
+        self.bind_all(f"<{self.prev_item_bind}>", lambda e: self.prev_item())
+        self.bind_all(f"<{self.next_item_bind}>", lambda e: self.next_item())
 
         # start refresh
         self.refresh()
@@ -347,11 +414,6 @@ class TargetViewerWindow(ctk.CTkToplevel):
         target_x = self.targets[self.target_index][1]
         target_z = self.targets[self.target_index][2]
 
-        # Set Labels for non reliant F3+C variables 
-        self.id_label.configure(text=f"{target_id}")
-        self.target_x_label.configure(text=f"{int(target_x)}")
-        self.target_z_label.configure(text=f"{int(target_z)}")
-
         #======================================================
         # F3+C Variables Handling
         #======================================================
@@ -363,36 +425,41 @@ class TargetViewerWindow(ctk.CTkToplevel):
 
             self.required_angle_label.configure(text="—")
             self.angle_change_label.configure(text="—")
-            return
         
+        else:
+            # When player info exists
+            player_x = self.parent.player_x
+            player_z = self.parent.player_z
+            player_yaw = self.parent.player_yaw
 
-        player_x = self.parent.player_x
-        player_z = self.parent.player_z
-        player_yaw = self.parent.player_yaw
+            # If player in nether use nether coords as target
+            if ("nether" in self.parent.player_dimension):
+                target_x = target_x/8
+                target_z = target_z/8
 
-        # If player in nether use nether coords as target
-        if ("nether" in self.parent.player_dimension):
-            target_x = target_x/8
-            target_z = target_z/8
+            required_angle = compute_yaw_to_target(player_x, player_z, target_x, target_z)    
 
-        required_angle = compute_yaw_to_target(player_x, player_z, target_x, target_z)    
+            angle_change = normalize_angle_delta(required_angle - player_yaw)
+            angle_color = value_to_color(abs(angle_change), 5, 180)
 
-        angle_change = normalize_angle_delta(required_angle - player_yaw)
-        angle_color = value_to_color(abs(angle_change), 5, 180)
+            distance_x = int(player_x - target_x)
+            distance_z = int(player_z - target_z)
 
-        distance_x = int(player_x - target_x)
-        distance_z = int(player_z - target_z)
+            distance_x_color = value_to_color(distance_x, 5, 100)
+            distance_z_color = value_to_color(distance_z, 5, 100)
 
-        distance_x_color = value_to_color(distance_x, 5, 100)
-        distance_z_color = value_to_color(distance_z, 5, 100)
-
-        self.distance_x_label.configure(text=f"{distance_x}", text_color=distance_x_color)
-        self.distance_z_label.configure(text=f"{distance_z}", text_color=distance_z_color)
-        
-        self.required_angle_label.configure(text=f"{required_angle:.1f}°")
+            self.distance_x_label.configure(text=f"{distance_x}", text_color=distance_x_color)
+            self.distance_z_label.configure(text=f"{distance_z}", text_color=distance_z_color)
+            
+            self.required_angle_label.configure(text=f"{required_angle:.1f}°")
 
 
-        self.angle_change_label.configure(text=f"{angle_change:+.1f}°", text_color=angle_color)
+            self.angle_change_label.configure(text=f"{angle_change:+.1f}°", text_color=angle_color)
+
+        # Set Labels for non reliant F3+C variables 
+        self.id_label.configure(text=f"{target_id}")
+        self.target_x_label.configure(text=f"{int(target_x)}")
+        self.target_z_label.configure(text=f"{int(target_z)}")
 
 
 
