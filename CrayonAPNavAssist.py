@@ -13,6 +13,7 @@ import re
 import math
 import customtkinter as ctk
 from tkinter import messagebox
+import keyboard
 
 ctk.set_appearance_mode("dark")
 ctk.set_default_color_theme("blue")
@@ -77,10 +78,6 @@ class CrayonAPNavAssist(ctk.CTk):
 
         self.viewer_window = None
 
-        # Player Binds
-        self.prev_item_bind = None
-        self.next_item_bind = None
-
         ctk.CTkLabel(self, text="All Portals Navigator", font=("Arial", 24)).grid(row=0, column=0, padx=10, pady=(10, 5), sticky="nesw")
         ctk.CTkLabel(self, text="Paste list below:", font=("Arial", 18)).grid(row=1, column=0, padx=10, pady=(10, 2), sticky="w")
 
@@ -115,12 +112,14 @@ class CrayonAPNavAssist(ctk.CTk):
         ctk.CTkLabel(rebind_frame, text="Rebind Controls:", font=("Arial", 16)).grid(row=0, column=0, columnspan=2, padx=10, pady=(10, 5), sticky="nesw")
 
         ctk.CTkLabel(rebind_frame, text="Prev Item:").grid(row=1, column=0, padx=5, pady=5, sticky="e")
-        self.prev_button_bind = ctk.CTkButton(rebind_frame, text=f"{self.prev_item_bind}", font=("Arial", 14), command=self.bind_prev_item_key)
-        self.prev_button_bind.grid(row=1, column=1, sticky="nesw", padx=10, pady=4)
+        self.prev_item_bind_var = ctk.StringVar(value="ctrl+left")
+        self.prev_item_entry = ctk.CTkEntry(rebind_frame, textvariable=self.prev_item_bind_var, font=("Arial", 14))
+        self.prev_item_entry.grid(row=1, column=1, sticky="nesw", padx=10, pady=4)
 
         ctk.CTkLabel(rebind_frame, text="Next Item:").grid(row=2, column=0, padx=5, pady=5, sticky="e")
-        self.next_button_bind = ctk.CTkButton(rebind_frame, text=f"{self.next_item_bind}", font=("Arial", 14), command=self.bind_next_item_key)
-        self.next_button_bind.grid(row=2, column=1, sticky="nesw", padx=10, pady=4)
+        self.next_item_bind_var = ctk.StringVar(value="ctrl+right")
+        self.next_item_entry = ctk.CTkEntry(rebind_frame, textvariable=self.next_item_bind_var, font=("Arial", 14))
+        self.next_item_entry.grid(row=2, column=1, sticky="nesw", padx=10, pady=4)
 
         # Start clipboard updates for F3+C
         self._last_clip = ""
@@ -176,7 +175,7 @@ class CrayonAPNavAssist(ctk.CTk):
                 return
 
         if self.viewer_window is None or not self.viewer_window.winfo_exists():
-            self.viewer_window = TargetViewerWindow(self, self.targets, header=self.header_name, prev_item_bind=self.prev_item_bind, next_item_bind=self.next_item_bind)
+            self.viewer_window = TargetViewerWindow(self, self.targets, header=self.header_name, prev_item_bind=self.prev_item_bind_var.get(), next_item_bind=self.next_item_bind_var.get())
             # center the viewer over this window
             self.viewer_window.update_idletasks()
             x = self.winfo_rootx() + 30
@@ -184,8 +183,8 @@ class CrayonAPNavAssist(ctk.CTk):
             self.viewer_window.geometry(f"+{x}+{y}")
         else:
             # Set binds, in case new ones
-            self.viewer_window.prev_item_bind = self.prev_item_bind
-            self.viewer_window.next_item_bind = self.next_item_bind
+            self.viewer_window.prev_item_bind = self.prev_item_bind_var.get()
+            self.viewer_window.next_item_bind = self.next_item_bind_var.get()
 
             # bring to front
             self.viewer_window.lift()
@@ -237,39 +236,6 @@ class CrayonAPNavAssist(ctk.CTk):
         # If viewer open, trigger recalculation/redraw
         if self.viewer_window is not None and self.viewer_window.winfo_exists():
             self.viewer_window.refresh()
-
-    #==========================================================================================================================
-    # Key binding
-    #==========================================================================================================================
-    def bind_prev_item_key(self):
-        self.prev_button_bind.configure(text="Press a key...")
-        self.bind_all("<Key>", self.bind_prev_listening_for_key)
-
-    def bind_prev_listening_for_key(self, event):
-        key = event.keysym
-
-        # Remove listener immediately
-        self.unbind_all("<Key>")
-
-        # Set and display new bind
-        self.prev_item_bind = key
-        self.prev_button_bind.configure(text=f"{key}")
-
-
-    def bind_next_item_key(self):
-        self.next_button_bind.configure(text="Press a key...")
-        self.bind_all("<Key>", self.bind_next_listening_for_key)
-
-    def bind_next_listening_for_key(self, event):
-        key = event.keysym
-
-        # Remove listener immediately
-        self.unbind_all("<Key>")
-
-        # Set and display new bind
-        self.next_item_bind = key
-        self.next_button_bind.configure(text=f"{key}")
-        
 
 
 class TargetViewerWindow(ctk.CTkToplevel):
@@ -343,8 +309,8 @@ class TargetViewerWindow(ctk.CTkToplevel):
         self.next_btn.grid(row=0, column=2, padx=6, pady=8, sticky="e")
 
         # Bind next stronghold and prev stronghold
-        self.bind_all(f"<{self.prev_item_bind}>", lambda e: self.prev_item())
-        self.bind_all(f"<{self.next_item_bind}>", lambda e: self.next_item())
+        keyboard.add_hotkey(self.prev_item_bind.lower(), self.prev_item)
+        keyboard.add_hotkey(self.next_item_bind.lower(), self.next_item)
 
         # start refresh
         self.refresh()
