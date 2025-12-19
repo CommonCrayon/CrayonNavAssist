@@ -12,7 +12,7 @@ Example input:
 import re
 import math
 import customtkinter as ctk
-from tkinter import messagebox
+from  CustomTkinterMessagebox  import *
 import keyboard
 
 ctk.set_appearance_mode("dark")
@@ -131,7 +131,7 @@ class CrayonAPNavAssist(ctk.CTk):
 
         text = self.list_text.get("1.0", "end").strip()
         if not text:
-            messagebox.showinfo("Parse", "Textbox is empty.")
+            CTkMessagebox.messagebox("Error", "Textbox is empty.")
             return
 
         # reset
@@ -154,10 +154,12 @@ class CrayonAPNavAssist(ctk.CTk):
                 self.targets.append([int(m.group(1)), int(m.group(2)), int(m.group(3))])
             else:
                 continue
+        
+        # When no targets found
+        if self.targets is None or len(self.targets) == 0:
+            CTkMessagebox.messagebox("Error", "No target lines were found.\nMake sure lines look like: [1,2000,0]")
+            return
 
-        # TODO - Replace MessageBox
-        if len(self.targets) == 0:
-            messagebox.showwarning("Parse", "No target lines were found. Make sure lines look like: [1,2000,0]")
 
         # If viewer open, refresh its data. Otherwise Open
         if self.viewer_window is not None and self.viewer_window.winfo_exists():
@@ -171,11 +173,6 @@ class CrayonAPNavAssist(ctk.CTk):
 
     # Opens Window to be used
     def launch_window(self):
-
-        # TODO - Replace Message Box
-        if self.targets is None or len(self.targets) == 0:
-            if not messagebox.askyesno("No targets", "No targets parsed. Open empty viewer anyway?"):
-                return
 
         if self.viewer_window is None or not self.viewer_window.winfo_exists():
             self.viewer_window = TargetViewerWindow(self, self.targets, header=self.header_name, prev_item_bind=self.prev_item_bind_var.get(), next_item_bind=self.next_item_bind_var.get())
