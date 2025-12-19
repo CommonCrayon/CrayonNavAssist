@@ -1,14 +1,3 @@
-"""
-Example input:
-
-"0:Crayon"
-[1,200,100]
-[4,500,0]
-[5,256,444]
-[2,-104,174]
-[6,-260,444]
-"""
-
 import re
 import math
 import customtkinter as ctk
@@ -109,7 +98,7 @@ class CrayonAPNavAssist(ctk.CTk):
         rebind_frame.grid(row=5, column=0, padx=10, pady=(0, 10), sticky="ew")
         rebind_frame.grid_columnconfigure(1, weight=1)
 
-        ctk.CTkLabel(rebind_frame, text="Rebind Controls:", font=("Arial", 16)).grid(row=0, column=0, columnspan=2, padx=10, pady=(10, 5), sticky="nesw")
+        ctk.CTkLabel(rebind_frame, text="Rebind Controls:", font=("Arial", 16)).grid(row=0, column=0, columnspan=2, padx=10, pady=(10, 5), sticky="nsw")
 
         ctk.CTkLabel(rebind_frame, text="Prev Item:").grid(row=1, column=0, padx=5, pady=5, sticky="e")
         self.prev_item_bind_var = ctk.StringVar(value="ctrl+left")
