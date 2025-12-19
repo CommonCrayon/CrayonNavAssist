@@ -62,7 +62,7 @@ class CrayonAPNavAssist(ctk.CTk):
     def __init__(self):
         super().__init__()
         self.title("CrayonAPNavAssist")
-        self.geometry("340x520")
+        self.geometry("340x524")
         self.grid_columnconfigure(0, weight=1)
 
         # Player / F3+C state
@@ -161,6 +161,9 @@ class CrayonAPNavAssist(ctk.CTk):
 
         # If viewer open, refresh its data. Otherwise Open
         if self.viewer_window is not None and self.viewer_window.winfo_exists():
+            # Set binds, in case new ones
+            self.viewer_window.update_item_hotkeys(self.prev_item_bind_var.get(),  self.next_item_bind_var.get())
+
             self.viewer_window.set_targets(self.targets, header=self.header_name)
         else:
             self.launch_window()
@@ -182,10 +185,6 @@ class CrayonAPNavAssist(ctk.CTk):
             y = self.winfo_rooty() + 30
             self.viewer_window.geometry(f"+{x}+{y}")
         else:
-            # Set binds, in case new ones
-            self.viewer_window.prev_item_bind = self.prev_item_bind_var.get()
-            self.viewer_window.next_item_bind = self.next_item_bind_var.get()
-
             # bring to front
             self.viewer_window.lift()
             self.viewer_window.focus_force()
@@ -243,14 +242,11 @@ class TargetViewerWindow(ctk.CTkToplevel):
         super().__init__(parent)
         self.parent = parent
 
-        # Binds to go to next stronghold and previous stronghold
-        self.prev_item_bind = prev_item_bind
-        self.next_item_bind = next_item_bind
-
         self.title("CrayonNavAssist")
         self.attributes("-topmost", True)
 
-
+        self.prev_hotkey_id = None
+        self.next_hotkey_id = None
 
         self.targets = targets
         self.header = header
@@ -309,8 +305,7 @@ class TargetViewerWindow(ctk.CTkToplevel):
         self.next_btn.grid(row=0, column=2, padx=6, pady=8, sticky="e")
 
         # Bind next stronghold and prev stronghold
-        keyboard.add_hotkey(self.prev_item_bind.lower(), self.prev_item)
-        keyboard.add_hotkey(self.next_item_bind.lower(), self.next_item)
+        self.update_item_hotkeys(prev_item_bind.lower(), next_item_bind.lower())
 
         # start refresh
         self.refresh()
@@ -329,6 +324,20 @@ class TargetViewerWindow(ctk.CTkToplevel):
         if not self.targets:
             return "0 / 0"
         return f"{self.target_index+1} / {len(self.targets)}"
+
+    def update_item_hotkeys(self, prev_item_bind, next_item_bind):
+        # Remove old bindings if they exist
+        if self.prev_hotkey_id is not None:
+            keyboard.remove_hotkey(self.prev_hotkey_id)
+            self.prev_hotkey_id = None
+
+        if self.next_hotkey_id is not None:
+            keyboard.remove_hotkey(self.next_hotkey_id)
+            self.next_hotkey_id = None
+
+        # Add new bindings
+        self.prev_hotkey_id = keyboard.add_hotkey(prev_item_bind, self.prev_item)
+        self.next_hotkey_id = keyboard.add_hotkey(next_item_bind, self.next_item)
 
     def prev_item(self):
         if not self.targets:
