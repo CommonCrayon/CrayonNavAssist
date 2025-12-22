@@ -31,7 +31,7 @@ Note: Other key/s must not be held. It can only be this combination.
 
 - The bottom frame allows to switch between tracking items and updates the target.
 
-![](images/navassist.png?raw=true)
+![](images/tracker.png?raw=true)
 
 # Usage
 1. Download CrayonAllPortals.exe from releases.
