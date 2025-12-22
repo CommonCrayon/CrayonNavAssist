@@ -39,7 +39,7 @@ Note: Other key/s must not be held. It can only be this combination.
 3. You will be presented with the Configuration Page.
 
 4. In the Configuration Page, you are already provided the best coordinates for measuring each Stronghold Ring. Thus, the first step is to find the location of each ring and note the coordinates down of each starter room.
-5. After getting all 8 rings, you should input your data into the CrayonAllPortals[https://github.com/CommonCrayon/CrayonAllPortals] tool.
+5. After getting all 8 rings, you should input your data into the [CrayonAllPortals](https://github.com/CommonCrayon/CrayonAllPortals) tool.
 6. The tool will provide you parseable text back, like below:   
 ```text
 "0:Steve"
