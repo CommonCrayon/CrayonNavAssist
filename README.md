@@ -41,7 +41,7 @@ Note: Other key/s must not be held. It can only be this combination.
 4. In the Configuration Page, you are already provided the best coordinates for measuring each Stronghold Ring. Thus, the first step is to find the location of each ring and note the coordinates down of each starter room.
 5. After getting all 8 rings, you should input your data into the CrayonAllPortals[https://github.com/CommonCrayon/CrayonAllPortals] tool.
 6. The tool will provide you parseable text back, like below:   
-`
+```text
 "0:Steve"
 [3,2024,310]
 [21,10085,5017]
@@ -51,7 +51,7 @@ Note: Other key/s must not be held. It can only be this combination.
 [85,20213,3297]
 [86,19333,6757]
 [121,20924,10810]
-`
+```
 7. This can be entered within the Main Textbox and launched to complete each stronghold 1 by 1 to complete a whole path. Thus allowing for easy tracking of strongholds, their order and achieving the best path for the fastest All Portals Speedrun.
 
 # BUILD
